@@ -1,11 +1,11 @@
 # Introduction 
+This is a simple litle library built to ensure consistant global error handling, supporting [RFC 7807](https://tools.ietf.org/html/rfc7807) in ASP .net core APIs.
+
 Traditionaly to handle errors globaly in ASP, one would create an error handling middleware and wrap the next delegate in a try-catch. Each globaly handled exception would get its own catch block, with a default "catch-all exceptions" in the last block. Adding a new exception handling to the mix would be as simple as adding another catch in your try-catch sandwitch just at the right place, and write an adiquite response through `HttpContext.Response`. 
 
 This approch works, however there are some downsides. For one it violates SOLIDs open-closed principle. Check out the principle if you're wondring why it's a bad thing. 
 
 Another downside is that it gives no guide for the developer as to what to return to the client through `HttpContext.Response`. This opens the posibility for unconsistancy in the error response format as the developers are free to modify the http response any way they see fit. Which potentially makes it harder to consume your API as your clients would need to know about, deserialize, and act upon multiple error response formats.
-
-This is a simple litle library built to ensure consistant global error handling, supporting [RFC 7807](https://tools.ietf.org/html/rfc7807) in ASP .net core APIs.
 
 # Getting Started
 Install the library through the package manager console:
