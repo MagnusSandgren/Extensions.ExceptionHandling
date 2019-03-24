@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <PackageId>Sandbranch.Extensions.ExceptionHandling</PackageId>
+    <Authors>Magnus Sandgren</Authors>
+    <Product>Sandbranch.Extensions.ExceptionHandling</Product>
+    <Description>This is a simple litle library built to ensure consistant global error handling, supporting RFC 7807 in ASP .net core APIs.</Description>
+    <Copyright>Copyright © 2019 Magnus Sandgren. All rights reserved.</Copyright>
+    <PackageProjectUrl>https://github.com/sandbranch/Extensions.ExceptionHandling</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sandbranch/Extensions.ExceptionHandling</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>
