@@ -54,15 +54,28 @@ public class ExceptionHandler : IExceptionHandler<Exception>
 }
 ```
 
-Alternatively you 
+Alternatively you can create an exception handler by inheriting `AbstractLoggerExceptionHandler<TSelf, TException>` like so:
 
-<!-- # Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+```csharp
+public class ExceptionHandler : AbstractLoggerExceptionHandler<ExceptionHandler, Exception>
+{
+    public ExceptionHandler(ILogger<ExceptionHandler> logger) : base(logger)
+    {
+    }
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://www.visualstudio.com/en-us/docs/git/create-a-readme). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore) -->
+    public override Task<ProblemDetails> Handle(Exception exception, ExceptionHandlerContext context)
+    {
+        return Task.FromResult(new ProblemDetails
+        {
+            Status = StatusCodes.Status500InternalServerError,
+            Title = "An unexpected error occurred.",
+            Detail = "Something went wrong during the request. Please contact " +
+                     "system administrators with the Instance value.",
+            Instance = context.TraceId
+        });
+    }
+}
+```
 
 # License
 Copyright © 2019 Magnus Sandgren. All rights reserved.
