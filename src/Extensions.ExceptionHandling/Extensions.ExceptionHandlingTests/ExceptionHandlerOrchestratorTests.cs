@@ -162,7 +162,7 @@ namespace Extensions.ExceptionHandlingTests
                 Status = StatusCodes.Status400BadRequest,
                 Title = "Something bad just happen.",
                 Detail = "It was really-really bad!",
-                Instance = "This is a reference to the specific error that just occured.",
+                Instance = "This is a reference to the specific error that just occurred.",
                 Type = "Some type"
             };
             var orchestrator = OrchestratorBuilder

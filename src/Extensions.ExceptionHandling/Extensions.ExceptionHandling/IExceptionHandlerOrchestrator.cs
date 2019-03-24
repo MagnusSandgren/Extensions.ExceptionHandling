@@ -17,7 +17,7 @@ namespace Extensions.ExceptionHandling
         /// Attempt to handle the incoming exception.
         /// </summary>
         /// <param name="exception">The exception to handle.</param>
-        /// <param name="context">The http context in which the exception occured.</param>
+        /// <param name="context">The http context in which the exception occurred.</param>
         /// <returns>True if the exception were handled successfully, otherwise false.</returns>
         Task<bool> TryHandleExceptionAsync(Exception exception, HttpContext context);
     }
@@ -45,7 +45,7 @@ namespace Extensions.ExceptionHandling
         /// Attempt to handle the incoming exception.
         /// </summary>
         /// <param name="exception">The exception to handle.</param>
-        /// <param name="context">The http context in which the exception occured.</param>
+        /// <param name="context">The http context in which the exception occurred.</param>
         /// <returns>True if the exception were handled successfully, otherwise false.</returns>
         public async Task<bool> TryHandleExceptionAsync(Exception exception, HttpContext context)
         {
