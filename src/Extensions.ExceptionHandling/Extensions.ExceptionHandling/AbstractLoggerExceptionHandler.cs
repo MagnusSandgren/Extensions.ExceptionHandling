@@ -8,7 +8,7 @@ namespace Extensions.ExceptionHandling
 
     /// <summary>
     /// Represents an exception handler that can handle exceptions of <typeparamref name="TException"/> 
-    /// or any of its sub exceptions while offering an overrideable default logging behaviour.
+    /// or any of its sub exceptions while offering an overrideable default logging behavior.
     /// </summary>
     /// <typeparam name="TSelf">Type of self.</typeparam>
     /// <typeparam name="TException">The type of <see cref="T:System.Exception"/> to handle.</typeparam>

@@ -59,14 +59,15 @@ namespace Extensions.ExceptionHandling
                 throw new ArgumentNullException(nameof(context));
             }
 
+            var handlerContext = CreateHandlerContext(context);
             var exceptionType = exception.GetType();
-
-            if (!_serviceProvider.TryGetExceptionHandler(exceptionType, out var handler))
-            {
-                return false;
-            }
             
-            var problemDetails = await InvokeHandler(handler, exception, exceptionType, CreateHandlerContext(context));
+            // TODO: Add continuation strategy
+            var exceptionHandlers = _serviceProvider.GetExceptionHandlers(exceptionType).Take(1);
+
+            var problemDetails = await exceptionHandlers
+                .Select(handler => InvokeHandler(handler, exception, exceptionType, handlerContext))
+                .FirstOrDefaultAsync(x => x != null);
 
             if (problemDetails == null)
             {
