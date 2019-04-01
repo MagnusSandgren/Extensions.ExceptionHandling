@@ -59,18 +59,15 @@ namespace Extensions.ExceptionHandling
                 throw new ArgumentNullException(nameof(context));
             }
 
+            var handlerContext = CreateHandlerContext(context);
+            var exceptionType = exception.GetType();
             
+            // TODO: Add continuation strategy
+            var exceptionHandlers = _serviceProvider.GetExceptionHandlers(exceptionType).Take(1);
 
-            
-
-            var problemDetails = await NewMethod(exception, context);
-
-            //if (!_serviceProvider.TryGetExceptionHandler(exceptionType, out var handler))
-            //{
-            //    return false;
-            //}
-
-            //var problemDetails = await InvokeHandler(handler, exception, exceptionType, CreateHandlerContext(context));
+            var problemDetails = await exceptionHandlers
+                .Select(handler => InvokeHandler(handler, exception, exceptionType, handlerContext))
+                .FirstOrDefaultAsync(x => x != null);
 
             if (problemDetails == null)
             {
@@ -80,24 +77,6 @@ namespace Extensions.ExceptionHandling
             await WriteResponseAsync(context, problemDetails);
 
             return true;
-        }
-
-        private async Task<ProblemDetails> NewMethod(Exception exception, HttpContext context)
-        {
-            var exceptionType = exception.GetType();
-            var handlerContext = CreateHandlerContext(context);
-
-            foreach (var exceptionHandler in _serviceProvider.GetExceptionHandlers(exceptionType))
-            {
-                var p = await InvokeHandler(exceptionHandler, exception, exceptionType, handlerContext);
-
-                if (p != null)
-                {
-                    return p;
-                }
-            }
-
-            return default;
         }
 
         private static ExceptionHandlerContext CreateHandlerContext(HttpContext context)

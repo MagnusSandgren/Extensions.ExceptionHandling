@@ -141,20 +141,6 @@ namespace Extensions.ExceptionHandling
             await response.WriteAsync(json);
         }
 
-        internal static bool TryGetExceptionHandler(this IServiceProvider serviceProvider, Type exceptionType, out object exceptionHandler)
-        {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
-            exceptionHandler = serviceProvider
-                .GetExceptionHandlers(exceptionType)
-                .FirstOrDefault();
-
-            return exceptionHandler != null;
-        }
-
         internal static IEnumerable<object> GetExceptionHandlers(this IServiceProvider serviceProvider, Type exceptionType)
         {
             if (serviceProvider == null)
@@ -167,6 +153,21 @@ namespace Extensions.ExceptionHandling
                 .Select(x => CachedGenericExceptionHandlerInterfaceType.MakeGenericType(x))
                 .Select(serviceProvider.GetService)
                 .Where(x => x != null);
+        }
+
+        internal static async Task<T> FirstOrDefaultAsync<T>(this IEnumerable<Task<T>> tasks, Func<T, bool> predicate)
+        {
+            foreach (var task in tasks)
+            {
+                var result = await task;
+
+                if (predicate(result))
+                {
+                    return result;
+                }
+            }
+
+            return default;
         }
 
         private static IEnumerable<Type> GetInheritanceHierarchy(this Type type)
