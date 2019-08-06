@@ -10,7 +10,7 @@ Another downside is that it gives no guide for the developer as to what to retur
 # Getting Started
 Install the library through the package manager console:
 ```
-PM> Install-Package PACKAGE NAME HERE.
+PM> Install-Package Sandbranch.Extensions.ExceptionHandling.
 ```
 
 Then register the exception handlers through Startup.ConfigureServices:
