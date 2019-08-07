@@ -56,6 +56,11 @@ namespace Extensions.ExceptionHandling
                 throw new ArgumentNullException(nameof(context));
             }
 
+            if (context.RequestServices == null)
+            {
+                throw new ArgumentException($"{nameof(context)}.{nameof(context.RequestServices)} cannot be null.", nameof(context));
+            }
+
             var handlerContext = CreateHandlerContext(context);
             var exceptionType = exception.GetType();
             

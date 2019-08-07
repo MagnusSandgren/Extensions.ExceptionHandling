@@ -5,7 +5,6 @@ using Extensions.ExceptionHandling;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -16,23 +15,41 @@ namespace Extensions.ExceptionHandlingTests
         [Fact]
         public async Task TryHandleExceptionAsync_WithNullAsExceptionParam_ThrowsArgumentNullException()
         {
-            var orchestrator = OrchestratorBuilder.Empty(out var contextFactory);
-            await Assert.ThrowsAsync<ArgumentNullException>(() => orchestrator.TryHandleExceptionAsync(null, contextFactory.CreateContext()));
+            // Arrange
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var context = CreateHttpContext();
+
+            // Assert 
+            await Assert.ThrowsAsync<ArgumentNullException>(() => orchestrator.TryHandleExceptionAsync(null, context));
         }
 
         [Fact]
         public async Task TryHandleExceptionAsync_WithNullAsHttpContextParam_ThrowsArgumentNullException()
         {
-            var orchestrator = OrchestratorBuilder.Empty(out _);
+            // Arrange
+            var orchestrator = new ExceptionHandlerOrchestrator();
+
+            // Assert
             await Assert.ThrowsAsync<ArgumentNullException>(() => orchestrator.TryHandleExceptionAsync(new Exception(), null));
-        } 
+        }
+
+        [Fact]
+        public async Task TryHandleExceptionAsync_HttpContextWithoutRequestServices_ThrowsArgumentNullException()
+        {
+            // Arrange
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var context = new DefaultHttpContext();
+
+            // Assert
+            await Assert.ThrowsAsync<ArgumentException>(() => orchestrator.TryHandleExceptionAsync(new Exception(), context));
+        }
 
         [Fact]
         public async Task TryHandleExceptionAsync_GivenNoRegisteredHandlersWhenTryingToHandleException_ReturnsFalse()
         {
             // Arrange
-            var orchestrator = OrchestratorBuilder.Empty(out var contextFactory);
-            var context = contextFactory.CreateContext();
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var context = CreateHttpContext();
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new Exception(), context);
@@ -45,10 +62,11 @@ namespace Extensions.ExceptionHandlingTests
         public async Task TryHandleExceptionAsync_GivenExceptionHandlerWhenTryingToHandleException_ReturnsTrue()
         {
             // Arrange
-            var orchestrator = OrchestratorBuilder.WithoutLogger()
-                .AddExceptionHandler<Exception>(out _)
-                .Build(out var contextFactory);
-            var context = contextFactory.CreateContext();
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var services = new ServiceCollection()
+                .AddExceptionHandlerMock<Exception>(out _)
+                .BuildServiceProvider();
+            var context = CreateHttpContext(services);
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new Exception(), context);
@@ -61,10 +79,11 @@ namespace Extensions.ExceptionHandlingTests
         public async Task TryHandleExceptionAsync_GivenExceptionHandlerWhenTryingToHandleArgumentException_ReturnsTrue()
         {
             // Arrange
-            var orchestrator = OrchestratorBuilder.WithoutLogger()
-                .AddExceptionHandler<Exception>(out _)
-                .Build(out var contextFactory);
-            var context = contextFactory.CreateContext();
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var services = new ServiceCollection()
+                .AddExceptionHandlerMock<Exception>(out _)
+                .BuildServiceProvider();
+            var context = CreateHttpContext(services);
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new ArgumentException(), context);
@@ -77,10 +96,11 @@ namespace Extensions.ExceptionHandlingTests
         public async Task TryHandleExceptionAsync_GivenArgumentExceptionHandlerWhenTryingToHandleException_ReturnsFalse()
         {
             // Arrange
-            var orchestrator = OrchestratorBuilder.WithoutLogger()
-                .AddExceptionHandler<ArgumentException>(out _)
-                .Build(out var contextFactory);
-            var context = contextFactory.CreateContext();
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var services = new ServiceCollection()
+                .AddExceptionHandlerMock<ArgumentNullException>(out _)
+                .BuildServiceProvider();
+            var context = CreateHttpContext(services);
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new Exception(), context);
@@ -93,11 +113,12 @@ namespace Extensions.ExceptionHandlingTests
         public async Task TryHandleExceptionAsync_GivenArgumentExceptionAndExceptionHandlersWhenTryingToHandleArgumentException_OnlyArgumentExceptionHandlerIsInvoked()
         {
             // Arrange
-            var orchestrator = OrchestratorBuilder.WithoutLogger()
-                .AddExceptionHandler<Exception>(out var exceptionHandlerMocker)
-                .AddExceptionHandler<ArgumentException>(out var argumentExceptionHandlerMocker)
-                .Build(out var contextFactory);
-            var context = contextFactory.CreateContext();
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var services = new ServiceCollection()
+                .AddExceptionHandlerMock<Exception>(out var exceptionHandlerMocker)
+                .AddExceptionHandlerMock<ArgumentException>(out var argumentExceptionHandlerMocker)
+                .BuildServiceProvider();
+            var context = CreateHttpContext(services);
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new ArgumentException(), context);
@@ -112,11 +133,12 @@ namespace Extensions.ExceptionHandlingTests
         public async Task TryHandleExceptionAsync_GivenArgumentNullExceptionAndExceptionHandlersWhenTryingToHandleArgumentException_OnlyExceptionHandlerIsInvoked()
         {
             // Arrange
-            var orchestrator = OrchestratorBuilder.WithoutLogger()
-                .AddExceptionHandler<Exception>(out var exceptionHandlerMocker)
-                .AddExceptionHandler<ArgumentNullException>(out var argumentExceptionHandlerMocker)
-                .Build(out var contextFactory);
-            var context = contextFactory.CreateContext();
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var services = new ServiceCollection()
+                .AddExceptionHandlerMock<Exception>(out var exceptionHandlerMocker)
+                .AddExceptionHandlerMock<ArgumentNullException>(out var argumentExceptionHandlerMocker)
+                .BuildServiceProvider();
+            var context = CreateHttpContext(services);
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new ArgumentException(), context);
@@ -131,13 +153,13 @@ namespace Extensions.ExceptionHandlingTests
         public async Task TryHandleExceptionAsync_GivenFaultyExceptionHandlerWhenTryingToHandleException_ReturnsFalse()
         {
             // Arrange
-            var orchestrator = OrchestratorBuilder
-                .WithLogger(out _)
-                .AddExceptionHandler<Exception>(
-                    out var exceptionHandlerMocker, 
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var services = new ServiceCollection()
+                .AddExceptionHandlerMock<Exception>(
+                    out var exceptionHandlerMocker,
                     () => throw new Exception("The exception handler is unsafe! O_o"))
-                .Build(out var contextFactory);
-            var context = contextFactory.CreateContext();
+                .BuildServiceProvider();
+            var context = CreateHttpContext(services);
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new Exception(), context);
@@ -159,11 +181,11 @@ namespace Extensions.ExceptionHandlingTests
                 Instance = "This is a reference to the specific error that just occurred.",
                 Type = "Some type"
             };
-            var orchestrator = OrchestratorBuilder
-                .WithoutLogger()
-                .AddExceptionHandler<Exception>(out _, () => problemDetails)
-                .Build(out var contextFactory);
-            var context = contextFactory.CreateContext();
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var services = new ServiceCollection()
+                .AddExceptionHandlerMock<Exception>(out _, () => problemDetails)
+                .BuildServiceProvider();
+            var context = CreateHttpContext(services);
             context.Response.Body = new MemoryStream();
             
             // Act 
@@ -188,11 +210,12 @@ namespace Extensions.ExceptionHandlingTests
         public async Task TryHandleExceptionAsync_GivenFaultyApplicationExceptionHandlerAndExceptionHandlerWhenTryingToHandleApplicationException_ExceptionHandlerNotInvokedAndReturnsFalse()
         {
             // Arrange
-            var orchestrator = OrchestratorBuilder.WithoutLogger()
-                .AddExceptionHandler<ApplicationException>(out var applicationExceptionHandlerMock, () => throw new Exception())
-                .AddExceptionHandler<Exception>(out var exceptionHandlerMock)
-                .Build(out var contextFactory);
-            var context = contextFactory.CreateContext();
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var services = new ServiceCollection()
+                .AddExceptionHandlerMock<ApplicationException>(out var applicationExceptionHandlerMock, () => throw new Exception())
+                .AddExceptionHandlerMock<Exception>(out var exceptionHandlerMock)
+                .BuildServiceProvider();
+            var context = CreateHttpContext(services);
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new ApplicationException(), context);
@@ -203,68 +226,57 @@ namespace Extensions.ExceptionHandlingTests
             exceptionHandlerMock.Verify(TestHelpers.HandleExpression<Exception>(), Times.Never);
         }
 
-        #region Helpers
-
-        private class OrchestratorBuilder
+        [Fact]
+        public async Task TryHandleExceptionAsync_GivenServiceProviderWithScopeValidationAndScopeDependingExceptionHandler_SucceedsAndReturnsTrue()
         {
-            private readonly IServiceCollection _serviceCollection = new ServiceCollection();
-            private readonly ILogger<ExceptionHandlerOrchestrator> _logger;
+            // Arrange 
+            var orchestrator = new ExceptionHandlerOrchestrator();
+            var services = new ServiceCollection()
+                .AddTransient<IExceptionHandler<Exception>, DependingExceptionHandler>()
+                .AddScoped<DependingType>()
+                .BuildServiceProvider(true);
+            var scope = services.CreateScope();
+            var context = CreateHttpContext(scope.ServiceProvider);
 
-            private OrchestratorBuilder(ILogger<ExceptionHandlerOrchestrator> logger = null)
+            // Act
+            var result = await orchestrator.TryHandleExceptionAsync(new Exception(), context);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        private static HttpContext CreateHttpContext(IServiceProvider services = null)
+        {
+            return new DefaultHttpContext
             {
-                _logger = logger;
+                RequestServices = services ?? new ServiceCollection().BuildServiceProvider(true)
+            };
+        }
+
+        //public static OrchestratorBuilder WithLogger(
+        //    out Mock<ILogger<ExceptionHandlerOrchestrator>> logMock)
+        //{
+        //    logMock = new Mock<ILogger<ExceptionHandlerOrchestrator>>();
+        //    return new OrchestratorBuilder(logMock.Object);
+        //}
+
+        private class DependingExceptionHandler : IExceptionHandler<Exception>
+        {
+            private readonly DependingType _depending;
+
+            public DependingExceptionHandler(DependingType depending)
+            {
+                _depending = depending ?? throw new ArgumentNullException(nameof(depending));
             }
 
-            public OrchestratorBuilder AddExceptionHandler<TException>(
-                out Mock<IExceptionHandler<TException>> exceptionHandlerMock,
-                Func<ProblemDetails> problemDetailsFunc = null)
-                where TException : Exception
+            public Task<ProblemDetails> Handle(Exception exception, ExceptionHandlerContext context)
             {
-                _serviceCollection.AddExceptionHandlerMock(
-                    out exceptionHandlerMock,
-                    problemDetailsFunc);
-                return this;
-            }
-
-            public ExceptionHandlerOrchestrator Build(out HttpContextFactory httpContextFactory)
-            {
-                httpContextFactory = new HttpContextFactory(_serviceCollection.BuildServiceProvider());
-                return new ExceptionHandlerOrchestrator(_logger);
-                //return new ExceptionHandlerOrchestrator(_serviceCollection.BuildServiceProvider(), _logger);
-            }
-
-            public static OrchestratorBuilder WithoutLogger()
-            {
-                return new OrchestratorBuilder();
-            }
-
-            public static OrchestratorBuilder WithLogger(
-                out Mock<ILogger<ExceptionHandlerOrchestrator>> logMock)
-            {
-                logMock = new Mock<ILogger<ExceptionHandlerOrchestrator>>();
-                return new OrchestratorBuilder(logMock.Object);
-            }
-
-            public static ExceptionHandlerOrchestrator Empty(out HttpContextFactory httpContextFactory)
-            {
-                return new OrchestratorBuilder().Build(out httpContextFactory);
+                return Task.FromResult(new ProblemDetails());
             }
         }
 
-        private class HttpContextFactory
+        private class DependingType
         {
-            public IServiceProvider Services { get; }
-
-            public HttpContextFactory(IServiceProvider services)
-            {
-                Services = services ?? throw new ArgumentNullException(nameof(services));
-            }
-
-            public HttpContext CreateContext()
-            {
-                return new DefaultHttpContext {RequestServices = Services};
-            }
         }
-        #endregion
     }
 }
