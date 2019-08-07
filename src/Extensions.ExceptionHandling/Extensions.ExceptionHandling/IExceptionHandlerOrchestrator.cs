@@ -27,17 +27,14 @@ namespace Extensions.ExceptionHandling
     /// </summary>
     public sealed class ExceptionHandlerOrchestrator : IExceptionHandlerOrchestrator
     {
-        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<ExceptionHandlerOrchestrator> _logger;
 
         /// <summary>
         /// Initialize a new instance of the <see cref="ExceptionHandlerOrchestrator"/> class. 
         /// </summary>
-        /// <param name="serviceProvider"></param>
         /// <param name="logger"></param>
-        public ExceptionHandlerOrchestrator(IServiceProvider serviceProvider, ILogger<ExceptionHandlerOrchestrator> logger = null)
+        public ExceptionHandlerOrchestrator(ILogger<ExceptionHandlerOrchestrator> logger = null)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _logger = logger;
         }
 
@@ -63,7 +60,7 @@ namespace Extensions.ExceptionHandling
             var exceptionType = exception.GetType();
             
             // TODO: Add continuation strategy
-            var exceptionHandlers = _serviceProvider.GetExceptionHandlers(exceptionType).Take(1);
+            var exceptionHandlers = context.RequestServices.GetExceptionHandlers(exceptionType).Take(1);
 
             var problemDetails = await exceptionHandlers
                 .Select(handler => InvokeHandler(handler, exception, exceptionType, handlerContext))

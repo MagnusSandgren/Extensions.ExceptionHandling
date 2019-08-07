@@ -14,23 +14,16 @@ namespace Extensions.ExceptionHandlingTests
     public class ExceptionHandlerOrchestratorTests
     {
         [Fact]
-        public void Constructor_WithNullAsServiceProviderParam_ThrowsArgumentNullException()
-        {
-            Assert.Throws<ArgumentNullException>(() =>
-                new ExceptionHandlerOrchestrator(null));
-        }
-
-        [Fact]
         public async Task TryHandleExceptionAsync_WithNullAsExceptionParam_ThrowsArgumentNullException()
         {
-            var orchestrator = OrchestratorBuilder.Empty();
-            await Assert.ThrowsAsync<ArgumentNullException>(() => orchestrator.TryHandleExceptionAsync(null, new DefaultHttpContext()));
+            var orchestrator = OrchestratorBuilder.Empty(out var contextFactory);
+            await Assert.ThrowsAsync<ArgumentNullException>(() => orchestrator.TryHandleExceptionAsync(null, contextFactory.CreateContext()));
         }
 
         [Fact]
         public async Task TryHandleExceptionAsync_WithNullAsHttpContextParam_ThrowsArgumentNullException()
         {
-            var orchestrator = OrchestratorBuilder.Empty();
+            var orchestrator = OrchestratorBuilder.Empty(out _);
             await Assert.ThrowsAsync<ArgumentNullException>(() => orchestrator.TryHandleExceptionAsync(new Exception(), null));
         } 
 
@@ -38,10 +31,11 @@ namespace Extensions.ExceptionHandlingTests
         public async Task TryHandleExceptionAsync_GivenNoRegisteredHandlersWhenTryingToHandleException_ReturnsFalse()
         {
             // Arrange
-            var orchestrator = OrchestratorBuilder.Empty();
+            var orchestrator = OrchestratorBuilder.Empty(out var contextFactory);
+            var context = contextFactory.CreateContext();
 
             // Act
-            var result = await orchestrator.TryHandleExceptionAsync(new Exception(), new DefaultHttpContext());
+            var result = await orchestrator.TryHandleExceptionAsync(new Exception(), context);
 
             // Assert
             Assert.False(result);
@@ -53,8 +47,8 @@ namespace Extensions.ExceptionHandlingTests
             // Arrange
             var orchestrator = OrchestratorBuilder.WithoutLogger()
                 .AddExceptionHandler<Exception>(out _)
-                .Build();
-            var context = new DefaultHttpContext();
+                .Build(out var contextFactory);
+            var context = contextFactory.CreateContext();
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new Exception(), context);
@@ -69,8 +63,8 @@ namespace Extensions.ExceptionHandlingTests
             // Arrange
             var orchestrator = OrchestratorBuilder.WithoutLogger()
                 .AddExceptionHandler<Exception>(out _)
-                .Build();
-            var context = new DefaultHttpContext();
+                .Build(out var contextFactory);
+            var context = contextFactory.CreateContext();
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new ArgumentException(), context);
@@ -85,8 +79,8 @@ namespace Extensions.ExceptionHandlingTests
             // Arrange
             var orchestrator = OrchestratorBuilder.WithoutLogger()
                 .AddExceptionHandler<ArgumentException>(out _)
-                .Build();
-            var context = new DefaultHttpContext();
+                .Build(out var contextFactory);
+            var context = contextFactory.CreateContext();
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new Exception(), context);
@@ -102,8 +96,8 @@ namespace Extensions.ExceptionHandlingTests
             var orchestrator = OrchestratorBuilder.WithoutLogger()
                 .AddExceptionHandler<Exception>(out var exceptionHandlerMocker)
                 .AddExceptionHandler<ArgumentException>(out var argumentExceptionHandlerMocker)
-                .Build();
-            var context = new DefaultHttpContext();
+                .Build(out var contextFactory);
+            var context = contextFactory.CreateContext();
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new ArgumentException(), context);
@@ -121,8 +115,8 @@ namespace Extensions.ExceptionHandlingTests
             var orchestrator = OrchestratorBuilder.WithoutLogger()
                 .AddExceptionHandler<Exception>(out var exceptionHandlerMocker)
                 .AddExceptionHandler<ArgumentNullException>(out var argumentExceptionHandlerMocker)
-                .Build();
-            var context = new DefaultHttpContext();
+                .Build(out var contextFactory);
+            var context = contextFactory.CreateContext();
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new ArgumentException(), context);
@@ -142,8 +136,8 @@ namespace Extensions.ExceptionHandlingTests
                 .AddExceptionHandler<Exception>(
                     out var exceptionHandlerMocker, 
                     () => throw new Exception("The exception handler is unsafe! O_o"))
-                .Build();
-            var context = new DefaultHttpContext();
+                .Build(out var contextFactory);
+            var context = contextFactory.CreateContext();
 
             // Act
             var result = await orchestrator.TryHandleExceptionAsync(new Exception(), context);
@@ -168,8 +162,8 @@ namespace Extensions.ExceptionHandlingTests
             var orchestrator = OrchestratorBuilder
                 .WithoutLogger()
                 .AddExceptionHandler<Exception>(out _, () => problemDetails)
-                .Build();
-            var context = new DefaultHttpContext();
+                .Build(out var contextFactory);
+            var context = contextFactory.CreateContext();
             context.Response.Body = new MemoryStream();
             
             // Act 
@@ -197,10 +191,11 @@ namespace Extensions.ExceptionHandlingTests
             var orchestrator = OrchestratorBuilder.WithoutLogger()
                 .AddExceptionHandler<ApplicationException>(out var applicationExceptionHandlerMock, () => throw new Exception())
                 .AddExceptionHandler<Exception>(out var exceptionHandlerMock)
-                .Build();
+                .Build(out var contextFactory);
+            var context = contextFactory.CreateContext();
 
             // Act
-            var result = await orchestrator.TryHandleExceptionAsync(new ApplicationException(), new DefaultHttpContext());
+            var result = await orchestrator.TryHandleExceptionAsync(new ApplicationException(), context);
 
             // Assert
             Assert.False(result);
@@ -231,9 +226,11 @@ namespace Extensions.ExceptionHandlingTests
                 return this;
             }
 
-            public ExceptionHandlerOrchestrator Build()
+            public ExceptionHandlerOrchestrator Build(out HttpContextFactory httpContextFactory)
             {
-                return new ExceptionHandlerOrchestrator(_serviceCollection.BuildServiceProvider(), _logger);
+                httpContextFactory = new HttpContextFactory(_serviceCollection.BuildServiceProvider());
+                return new ExceptionHandlerOrchestrator(_logger);
+                //return new ExceptionHandlerOrchestrator(_serviceCollection.BuildServiceProvider(), _logger);
             }
 
             public static OrchestratorBuilder WithoutLogger()
@@ -248,11 +245,26 @@ namespace Extensions.ExceptionHandlingTests
                 return new OrchestratorBuilder(logMock.Object);
             }
 
-            public static ExceptionHandlerOrchestrator Empty()
+            public static ExceptionHandlerOrchestrator Empty(out HttpContextFactory httpContextFactory)
             {
-                return new OrchestratorBuilder().Build();
+                return new OrchestratorBuilder().Build(out httpContextFactory);
             }
-        } 
+        }
+
+        private class HttpContextFactory
+        {
+            public IServiceProvider Services { get; }
+
+            public HttpContextFactory(IServiceProvider services)
+            {
+                Services = services ?? throw new ArgumentNullException(nameof(services));
+            }
+
+            public HttpContext CreateContext()
+            {
+                return new DefaultHttpContext {RequestServices = Services};
+            }
+        }
         #endregion
     }
 }

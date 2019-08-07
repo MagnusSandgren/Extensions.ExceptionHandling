@@ -41,7 +41,7 @@ namespace Extensions.ExceptionHandlingTests
                 .UseExceptionHandlerMiddleware()
                 .UseMiddleware<ExceptionThrowingMiddleware>()
                 .Build();
-            var context = GetHttpContext();
+            var context = GetHttpContext(serviceProvider);
 
             // Act
             await pipeline.Invoke(context);
@@ -61,9 +61,9 @@ namespace Extensions.ExceptionHandlingTests
             Assert.Equal(problemDetails.Type, problemDetailsResult.Type);
         }
 
-        private static HttpContext GetHttpContext()
+        private static HttpContext GetHttpContext(IServiceProvider services)
         {
-            var httpContext = new DefaultHttpContext();
+            var httpContext = new DefaultHttpContext {RequestServices = services};
             httpContext.Response.Body = new MemoryStream();
             return httpContext;
         }
