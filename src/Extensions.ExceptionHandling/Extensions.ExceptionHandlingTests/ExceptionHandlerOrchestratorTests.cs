@@ -253,13 +253,6 @@ namespace Extensions.ExceptionHandlingTests
             };
         }
 
-        //public static OrchestratorBuilder WithLogger(
-        //    out Mock<ILogger<ExceptionHandlerOrchestrator>> logMock)
-        //{
-        //    logMock = new Mock<ILogger<ExceptionHandlerOrchestrator>>();
-        //    return new OrchestratorBuilder(logMock.Object);
-        //}
-
         private class DependingExceptionHandler : IExceptionHandler<Exception>
         {
             private readonly DependingType _depending;
