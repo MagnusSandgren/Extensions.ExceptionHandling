@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-//using Newtonsoft.Json;
 
 namespace Extensions.ExceptionHandling
 {
@@ -136,8 +135,9 @@ namespace Extensions.ExceptionHandling
             {
                 throw new ArgumentNullException(nameof(response));
             }
-            response.ContentType = "application/json";
+
             var json = JsonSerializer.Serialize(value);
+            response.ContentType = "application/json";
             await response.WriteAsync(json);
         }
 
