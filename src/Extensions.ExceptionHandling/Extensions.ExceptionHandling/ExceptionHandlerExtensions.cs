@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -10,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Newtonsoft.Json;
+//using Newtonsoft.Json;
 
 namespace Extensions.ExceptionHandling
 {
@@ -135,9 +136,8 @@ namespace Extensions.ExceptionHandling
             {
                 throw new ArgumentNullException(nameof(response));
             }
-
-            var json = JsonConvert.SerializeObject(value);
             response.ContentType = "application/json";
+            var json = JsonSerializer.Serialize(value);
             await response.WriteAsync(json);
         }
 
