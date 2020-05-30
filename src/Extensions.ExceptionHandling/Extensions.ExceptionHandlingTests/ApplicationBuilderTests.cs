@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading.Tasks;
 using Extensions.ExceptionHandling;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Builder.Internal;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
